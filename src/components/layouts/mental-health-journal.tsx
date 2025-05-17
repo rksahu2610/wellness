@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CalendarIcon, Hash, Save, Search, Tag, Trash2 } from "lucide-react"
 import { format, startOfWeek, addDays, isSameDay } from "date-fns"
 
@@ -13,82 +13,26 @@ import { Label } from "~/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { Badge } from "~/components/ui/badge"
+import { moodEmojis, moodText } from "~/constants/data"
 
 type JournalEntry = {
   id: string
   date: Date
   content: string
-  mood: number // 1-5
+  mood: number
   tags: string[]
 }
-
-const moodEmojis = ["😢", "😕", "😐", "🙂", "😊"]
 
 export function MentalHealthJournal() {
   const [date, setDate] = useState<Date>(new Date())
   const [content, setContent] = useState("")
-  const [mood, setMood] = useState<number>(3)
+  const [mood, setMood] = useState<number>(-1)
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [activeTab, setActiveTab] = useState("journal")
 
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([
-    {
-      id: "1",
-      date: new Date(2025, 4, 15),
-      content:
-        "Had a productive day at work. Completed the project ahead of schedule. Feeling accomplished and satisfied with my progress.",
-      mood: 5,
-      tags: ["work", "accomplishment", "productivity"],
-    },
-    {
-      id: "2",
-      date: new Date(2025, 4, 14),
-      content:
-        "Feeling a bit stressed about the upcoming deadline. Need to focus more tomorrow and avoid distractions.",
-      mood: 2,
-      tags: ["stress", "work", "deadline"],
-    },
-    {
-      id: "3",
-      date: new Date(2025, 4, 13),
-      content:
-        "Spent time with family today. It was refreshing to disconnect from work and enjoy quality time with loved ones.",
-      mood: 4,
-      tags: ["family", "relaxation", "balance"],
-    },
-    {
-      id: "4",
-      date: new Date(2025, 4, 12),
-      content: "Feeling neutral today. Nothing particularly good or bad happened. Just an ordinary day.",
-      mood: 3,
-      tags: ["ordinary", "neutral"],
-    },
-    {
-      id: "5",
-      date: new Date(2025, 4, 11),
-      content:
-        "Had a disagreement with a colleague. Need to work on my communication skills and patience when dealing with difficult situations.",
-      mood: 2,
-      tags: ["conflict", "work", "communication"],
-    },
-    {
-      id: "6",
-      date: new Date(2025, 4, 10),
-      content:
-        "Started a new book today. It's been a while since I've read for pleasure, and I'm enjoying it immensely.",
-      mood: 4,
-      tags: ["reading", "hobby", "relaxation"],
-    },
-    {
-      id: "7",
-      date: new Date(2025, 4, 9),
-      content:
-        "Feeling overwhelmed with all the tasks I need to complete. Need to prioritize better and take things one step at a time.",
-      mood: 1,
-      tags: ["overwhelmed", "stress", "tasks"],
-    },
-  ])
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
 
   const addTag = () => {
     if (!tagInput.trim() || tags.includes(tagInput.trim().toLowerCase())) return
@@ -99,6 +43,11 @@ export function MentalHealthJournal() {
   const removeTag = (tag: string) => {
     setTags((prev) => prev.filter((t) => t !== tag))
   }
+
+  useEffect(() => {
+    const journal = JSON.parse(localStorage.getItem('mental') || '[]');
+    setJournalEntries(journal)
+  }, [])
 
   const saveJournalEntry = () => {
     if (!content.trim()) return
@@ -112,7 +61,6 @@ export function MentalHealthJournal() {
     }
 
     setJournalEntries((prev) => {
-      // Replace if entry for this date already exists
       const exists = prev.findIndex((entry) => isSameDay(entry.date, date))
 
       if (exists >= 0) {
@@ -121,17 +69,23 @@ export function MentalHealthJournal() {
         return updated
       }
 
-      return [...prev, newEntry].sort((a, b) => b.date.getTime() - a.date.getTime())
-    })
+      const datas = [...prev, newEntry].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-    // Reset form
+      localStorage.setItem('mental', JSON.stringify(datas))
+
+      return datas;
+    })
     setContent("")
-    setMood(3)
+    setMood(-1)
     setTags([])
   }
 
   const deleteJournalEntry = (id: string) => {
-    setJournalEntries((prev) => prev.filter((entry) => entry.id !== id))
+    setJournalEntries((prev) => {
+      const remove = prev.filter((entry) => entry.id !== id)
+      localStorage.setItem('mental', JSON.stringify(remove))
+      return remove;
+    })
   }
 
   const getEntryForDate = (date: Date) => {
@@ -141,7 +95,7 @@ export function MentalHealthJournal() {
   const currentEntry = getEntryForDate(date)
 
   const getWeekDates = (date: Date) => {
-    const start = startOfWeek(date, { weekStartsOn: 1 }) // Start on Monday
+    const start = startOfWeek(date, { weekStartsOn: 1 })
     return Array.from({ length: 7 }).map((_, i) => addDays(start, i))
   }
 
@@ -160,7 +114,7 @@ export function MentalHealthJournal() {
   const filteredEntries = getFilteredEntries()
 
   const getMoodDistribution = () => {
-    const distribution = [0, 0, 0, 0, 0] // For moods 1-5
+    const distribution = [0, 0, 0, 0, 0]
 
     journalEntries.forEach((entry) => {
       distribution[entry.mood - 1]++
@@ -189,7 +143,7 @@ export function MentalHealthJournal() {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="journal">
+      <Tabs onValueChange={setActiveTab} value={activeTab}>
         <TabsList>
           <TabsTrigger value="journal">Journal</TabsTrigger>
           <TabsTrigger value="weekly">Weekly View</TabsTrigger>
@@ -238,26 +192,22 @@ export function MentalHealthJournal() {
                   </Popover>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <Label>How are you feeling today?</Label>
                   <div className="flex justify-between">
                     {moodEmojis.map((emoji, index) => (
-                      <Button
-                        key={index}
-                        variant={mood === index + 1 ? "default" : "outline"}
-                        className="h-12 w-12 text-2xl"
-                        onClick={() => setMood(index + 1)}
-                      >
-                        {emoji}
-                      </Button>
+                      <div className="flex flex-col text-xs text-muted-foreground gap-2 justify-center items-center truncate"
+                        key={index}>
+                        <Button
+                          variant={mood === index + 1 ? "default" : "outline"}
+                          className="h-12 w-12 text-2xl"
+                          onClick={() => setMood(index + 1)}
+                        >
+                          {emoji}
+                        </Button>
+                        {moodText[index]}
+                      </div>
                     ))}
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Very Sad</span>
-                    <span>Sad</span>
-                    <span>Neutral</span>
-                    <span>Happy</span>
-                    <span>Very Happy</span>
                   </div>
                 </div>
 
@@ -304,7 +254,7 @@ export function MentalHealthJournal() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={saveJournalEntry} disabled={!content.trim()}>
+                <Button className="w-full" onClick={saveJournalEntry} disabled={!(content.trim() && mood !== -1)}>
                   <Save className="mr-2 h-4 w-4" /> Save Entry
                 </Button>
               </CardFooter>
@@ -414,9 +364,7 @@ export function MentalHealthJournal() {
                     <Button
                       variant="outline"
                       className="mt-4"
-                      onClick={() => {
-                        document.getElementById("journal-tab")?.click()
-                      }}
+                      onClick={() => setActiveTab("journal")}
                     >
                       Create Entry
                     </Button>

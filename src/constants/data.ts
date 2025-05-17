@@ -1,7 +1,7 @@
 const user_data = {
-    name: 'Rahul Kumar',
-    short_name: 'RK',
-    email: 'rksahu2601@gmail.com'
+  name: 'Rahul Kumar',
+  short_name: 'RK',
+  email: 'rksahu2601@gmail.com'
 }
 
 const moods = [
@@ -15,12 +15,7 @@ const moods = [
   { emoji: "😌", label: "Calm", color: "bg-teal-100 dark:bg-teal-900 text-teal-500" },
 ]
 
-const mood_entries = [
-    { date: new Date(2025, 4, 15), mood: moods[0], note: "Had a great day at work!" },
-    { date: new Date(2025, 4, 14), mood: moods[4], note: "Didn't sleep well last night" },
-    { date: new Date(2025, 4, 13), mood: moods[1], note: "Regular day, nothing special" },
-    { date: new Date(2025, 4, 12), mood: moods[6], note: "Got a promotion at work!" },
-    { date: new Date(2025, 4, 11), mood: moods[2], note: "Missed my family today" },
-  ]
+const moodEmojis = ["😢", "😕", "😐", "🙂", "😊"]
+const moodText = ["Very Sad", "Sad", "Neutral", "Happy", "Very Happy"]
 
-export { user_data, moods, mood_entries }
+export { user_data, moods, moodEmojis, moodText }
