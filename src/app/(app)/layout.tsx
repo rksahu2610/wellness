@@ -21,7 +21,22 @@ import { ModeToggle } from "~/components/mode-toggle"
 import { UserNav } from "~/components/user-nav"
 import { usePathname } from "next/navigation"
 
+const sideMenu = [
+  { id: 1, icon: Home, name: 'Dashbaord', link: '/' },
+  { id: 2, icon: Heart, name: 'Mood Tracker', link: '/mood' },
+  { id: 3, icon: Droplets, name: 'Water Intake', link: '/water' },
+  { id: 4, icon: Timer, name: 'Breathing Exercise', link: '/breathing' },
+  { id: 5, icon: Utensils, name: 'Meal Log', link: '/meal' },
+  { id: 6, icon: Moon, name: 'Sleep Tracker', link: '/sleep' },
+  { id: 7, icon: Activity, name: 'Fitness Routine', link: '/fitness' },
+  { id: 8, icon: Timer, name: 'Stretch Sequence', link: '/stretch' },
+  { id: 9, icon: Calendar, name: 'Mental Health Journal', link: '/mental' },
+  { id: 10, icon: Scale, name: 'Weight Tracker', link: '/weight' },
+];
+
 export default function Page({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const title = sideMenu.find(item => item.link === pathname);
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -29,7 +44,7 @@ export default function Page({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-6">
           <SidebarTrigger />
           <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-xl font-semibold">Wellness Dashboard</h1>
+            <h1 className="text-xl font-semibold">{title?.name || 'Dashboard'}</h1>
             <div className="flex items-center gap-2">
               <ModeToggle />
               <UserNav />
@@ -43,19 +58,6 @@ export default function Page({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   )
 }
-
-const sideMenu = [
-  { id: 1, icon: Home, name: 'Dashbaord', link: '/' },
-  { id: 2, icon: Heart, name: 'Mood Tracker', link: '/mood' },
-  { id: 3, icon: Droplets, name: 'Water Intake', link: '/water' },
-  { id: 4, icon: Timer, name: 'Breathing Exercise', link: '/breathing' },
-  { id: 5, icon: Utensils, name: 'Meal Log', link: '/meal' },
-  { id: 6, icon: Moon, name: 'Sleep Tracker', link: '/sleep' },
-  { id: 7, icon: Activity, name: 'Fitness Routine', link: '/fitness' },
-  { id: 8, icon: Timer, name: 'Stretch Sequence', link: '/stretch' },
-  { id: 9, icon: Calendar, name: 'Mental Health Journal', link: '/mental' },
-  { id: 10, icon: Scale, name: 'Weight Tracker', link: '/weight' },
-];
 
 function AppSidebar({ ...props }) {
   const pathname = usePathname();
