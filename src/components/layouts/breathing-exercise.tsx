@@ -20,7 +20,6 @@ export function BreathingExercise() {
     rest: 2,
   })
 
-  // const animationRef = useRef<number | null>(null)
   const circleRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,7 +29,6 @@ export function BreathingExercise() {
       interval = setInterval(() => {
         setSecondsLeft((prev) => {
           if (prev <= 1) {
-            // Move to next phase
             switch (currentPhase) {
               case "inhale":
                 setCurrentPhase("hold")
@@ -60,14 +58,8 @@ export function BreathingExercise() {
 
   useEffect(() => {
     if (!circleRef.current) return
-
-    // Update animation based on current phase
     const circle = circleRef.current
-
-    // Reset any existing animations
     circle.style.animation = "none"
-
-    // Force reflow
     void circle.offsetWidth
 
     if (isActive) {
@@ -76,13 +68,11 @@ export function BreathingExercise() {
           circle.style.animation = `breatheIn ${breathingPattern.inhale}s ease-in-out forwards`
           break
         case "hold":
-          // No animation during hold, keep the expanded state
           break
         case "exhale":
           circle.style.animation = `breatheOut ${breathingPattern.exhale}s ease-in-out forwards`
           break
         case "rest":
-          // No animation during rest, keep the contracted state
           break
       }
     }
@@ -261,10 +251,10 @@ export function BreathingExercise() {
                     onClick={() => setBreathingPattern({ inhale: 4, hold: 7, exhale: 8, rest: 0 })}
                     disabled={isActive}
                   >
-                    Apply 4-7-8 Breathing
+                    Apply 4-7-8-0 Breathing
                   </Button>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Inhale for 4, hold for 7, exhale for 8. Helps with anxiety and sleep.
+                    Inhale for 4, hold for 7, exhale for 8 and reset for 0. Helps with anxiety and sleep.
                   </p>
                 </TabsContent>
                 <TabsContent value="energizing" className="pt-2">
@@ -293,14 +283,14 @@ export function BreathingExercise() {
             opacity: 0.4;
           }
           to {
-            transform: scale(2.5);
+            transform: scale(2);
             opacity: 0.8;
           }
         }
         
         @keyframes breatheOut {
           from {
-            transform: scale(2.5);
+            transform: scale(2);
             opacity: 0.8;
           }
           to {
