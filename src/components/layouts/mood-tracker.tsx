@@ -45,9 +45,11 @@ export function MoodTracker() {
         return updated
       }
 
-      localStorage.setItem('mood', JSON.stringify([...prev, newEntry]))
+      const data = [...prev, newEntry];
 
-      return [...prev, newEntry]
+      localStorage.setItem('mood', JSON.stringify(data))
+
+      return data;
     })
 
     setNote("")
