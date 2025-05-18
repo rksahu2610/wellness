@@ -7,6 +7,7 @@ import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card"
 import { Slider } from "~/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
+import { toast } from "sonner"
 
 export function BreathingExercise() {
   const [isActive, setIsActive] = useState(false)
@@ -19,6 +20,10 @@ export function BreathingExercise() {
     exhale: 4,
     rest: 2,
   })
+
+  const box = { inhale: 4, hold: 4, exhale: 4, rest: 4 };
+  const relaxing = { inhale: 4, hold: 7, exhale: 8, rest: 0 };
+  const energizing = { inhale: 6, hold: 0, exhale: 2, rest: 0 };
 
   const circleRef = useRef<HTMLDivElement>(null)
 
@@ -235,8 +240,11 @@ export function BreathingExercise() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => setBreathingPattern({ inhale: 4, hold: 4, exhale: 4, rest: 4 })}
-                    disabled={isActive}
+                    onClick={() => {
+                      setBreathingPattern(box)
+                      toast.success('Apply Box Breathing')
+                    }}
+                    disabled={isActive || JSON.stringify(breathingPattern) === JSON.stringify(box)}
                   >
                     Apply Box Breathing (4-4-4-4)
                   </Button>
@@ -248,10 +256,13 @@ export function BreathingExercise() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => setBreathingPattern({ inhale: 4, hold: 7, exhale: 8, rest: 0 })}
-                    disabled={isActive}
+                    onClick={() => {
+                      setBreathingPattern(relaxing)
+                      toast.success('Apply Relaxing Breathing')
+                    }}
+                    disabled={isActive || JSON.stringify(breathingPattern) === JSON.stringify(relaxing)}
                   >
-                    Apply 4-7-8-0 Breathing
+                    Apply Relaxing Breathing (4-7-8-0)
                   </Button>
                   <p className="mt-2 text-xs text-muted-foreground">
                     Inhale for 4, hold for 7, exhale for 8 and reset for 0. Helps with anxiety and sleep.
@@ -261,8 +272,11 @@ export function BreathingExercise() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => setBreathingPattern({ inhale: 6, hold: 0, exhale: 2, rest: 0 })}
-                    disabled={isActive}
+                    onClick={() => {
+                      setBreathingPattern(energizing)
+                      toast.success('Apply Energizing Breathing')
+                    }}
+                    disabled={isActive || JSON.stringify(breathingPattern) === JSON.stringify(energizing)}
                   >
                     Apply Energizing Breath (6-0-2-0)
                   </Button>
