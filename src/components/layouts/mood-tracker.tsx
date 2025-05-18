@@ -10,6 +10,7 @@ import { Calendar } from "~/components/ui/calendar"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover"
 import { moods } from "~/constants/data"
+import { toast } from "sonner"
 type MoodEntry = {
   date: Date
   mood: (typeof moods)[number]
@@ -52,8 +53,10 @@ export function MoodTracker() {
       return data;
     })
 
+    
     setNote("")
     setSelectedMood(null)
+    toast.success('Sucessfully Save Mood')
   }
 
   const getMoodForDate = (date: Date) => {
