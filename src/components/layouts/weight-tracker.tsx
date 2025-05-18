@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CalendarIcon, Scale, TrendingDown, TrendingUp } from "lucide-react"
-import { format, subDays } from "date-fns"
+import { format } from "date-fns"
 
 import { cn } from "~/lib/utils"
 import { Button } from "~/components/ui/button"
@@ -11,6 +11,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "~/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs"
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart"
+import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
+import { toast } from "sonner"
 
 type WeightEntry = {
   date: Date
@@ -26,15 +29,12 @@ export function WeightTracker() {
   const [notes, setNotes] = useState("")
   const [unit, setUnit] = useState<"kg" | "lb">("kg")
 
-  const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([
-    { date: subDays(today, 30), weight: 75.5 },
-    { date: subDays(today, 25), weight: 75.2 },
-    { date: subDays(today, 20), weight: 74.8 },
-    { date: subDays(today, 15), weight: 74.3 },
-    { date: subDays(today, 10), weight: 73.9 },
-    { date: subDays(today, 5), weight: 73.5 },
-    { date: subDays(today, 0), weight: 73.2 },
-  ])
+  const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([])
+
+  useEffect(() => {
+    const weight_data = JSON.parse(localStorage.getItem('weight') || '[]')
+    setWeightEntries(weight_data)
+  }, [])
 
   const saveWeightEntry = () => {
     if (!weight.trim()) return
@@ -49,24 +49,28 @@ export function WeightTracker() {
     }
 
     setWeightEntries((prev) => {
-      // Replace if entry for this date already exists
-      const exists = prev.findIndex((entry) => entry.date.toDateString() === date.toDateString())
+      const exists = prev.findIndex((entry) => new Date(entry.date).toDateString() === new Date(date).toDateString())
 
       if (exists >= 0) {
         const updated = [...prev]
         updated[exists] = newEntry
+        localStorage.setItem('weight', JSON.stringify(updated))
         return updated
       }
 
-      return [...prev, newEntry].sort((a, b) => a.date.getTime() - b.date.getTime())
+      const created = [...prev, newEntry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      localStorage.setItem('weight', JSON.stringify(created))
+      return created;
     })
 
     setWeight("")
     setNotes("")
+    toast.success('Successfully Added Entry.')
   }
 
   const getWeightEntryForDate = (date: Date) => {
-    return weightEntries.find((entry) => entry.date.toDateString() === date.toDateString())
+    return weightEntries.find((entry) => new Date(entry.date).toDateString() === new Date(date).toDateString())
   }
 
   const currentEntry = getWeightEntryForDate(date)
@@ -96,6 +100,31 @@ export function WeightTracker() {
   }
 
   const weightChange = getWeightChange()
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+
+  const chartData = months.map(month => {
+    const entries = weightEntries
+      .filter(({ date }) => format(new Date(date), 'MMM') === month)
+      .sort((a, b) => +new Date(b.date) - +new Date(a.date));
+
+    return {
+      month,
+      weight: entries.length > 0 ? entries[0].weight : 0
+    };
+  });
+
+  console.info(chartData)
+
+  const chartConfig = {
+    weight: {
+      label: "Weight",
+      color: "var(--color-green-500)",
+    }
+  } satisfies ChartConfig
+
+  console.info(weightEntries);
 
   return (
     <div className="space-y-4">
@@ -276,11 +305,6 @@ export function WeightTracker() {
                 ))}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button variant="outline" className="w-full">
-              View Full History
-            </Button>
-          </CardFooter>
         </Card>
       </div>
 
@@ -290,91 +314,41 @@ export function WeightTracker() {
           <CardDescription>Visualize your weight changes over time</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full">
-            <svg width="100%" height="100%" viewBox="0 0 700 300" preserveAspectRatio="none">
-              {/* Grid lines */}
-              {Array.from({ length: 6 }).map((_, i) => (
-                <line
-                  key={`grid-${i}`}
-                  x1="0"
-                  y1={50 * i}
-                  x2="700"
-                  y2={50 * i}
-                  stroke="currentColor"
-                  strokeOpacity="0.1"
-                  strokeWidth="1"
-                />
-              ))}
-
-              {/* Weight line */}
-              {weightEntries.length > 1 && (
-                <>
-                  <path
-                    d={weightEntries
-                      .map((entry, i) => {
-                        const x = (i / (weightEntries.length - 1)) * 700
-                        const minWeight = Math.min(...weightEntries.map((e) => e.weight))
-                        const maxWeight = Math.max(...weightEntries.map((e) => e.weight))
-                        const range = maxWeight - minWeight
-                        const normalizedWeight = range === 0 ? 150 : 250 - ((entry.weight - minWeight) / range) * 200
-
-                        return `${i === 0 ? "M" : "L"} ${x} ${normalizedWeight}`
-                      })
-                      .join(" ")}
-                    fill="none"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-
-                  {/* Area under the line */}
-                  <path
-                    d={`
-                      ${weightEntries
-                        .map((entry, i) => {
-                          const x = (i / (weightEntries.length - 1)) * 700
-                          const minWeight = Math.min(...weightEntries.map((e) => e.weight))
-                          const maxWeight = Math.max(...weightEntries.map((e) => e.weight))
-                          const range = maxWeight - minWeight
-                          const normalizedWeight = range === 0 ? 150 : 250 - ((entry.weight - minWeight) / range) * 200
-
-                          return `${i === 0 ? "M" : "L"} ${x} ${normalizedWeight}`
-                        })
-                        .join(" ")}
-                      L ${700} 300
-                      L 0 300
-                      Z
-                    `}
-                    fill="hsl(var(--primary))"
-                    fillOpacity="0.1"
-                  />
-
-                  {/* Data points */}
-                  {weightEntries.map((entry, i) => {
-                    const x = (i / (weightEntries.length - 1)) * 700
-                    const minWeight = Math.min(...weightEntries.map((e) => e.weight))
-                    const maxWeight = Math.max(...weightEntries.map((e) => e.weight))
-                    const range = maxWeight - minWeight
-                    const normalizedWeight = range === 0 ? 150 : 250 - ((entry.weight - minWeight) / range) * 200
-
-                    return <circle key={`point-${i}`} cx={x} cy={normalizedWeight} r="4" fill="hsl(var(--primary))" />
-                  })}
-                </>
-              )}
-            </svg>
-          </div>
-
-          <div className="mt-4 flex justify-between">
-            {weightEntries.length > 1 && (
-              <>
-                <div className="text-sm text-muted-foreground">{format(weightEntries[0].date, "MMM d")}</div>
-                <div className="text-sm text-muted-foreground">
-                  {format(weightEntries[weightEntries.length - 1].date, "MMM d")}
-                </div>
-              </>
-            )}
-          </div>
+          <ChartContainer config={chartConfig}>
+            <LineChart
+              accessibilityLayer
+              data={chartData}
+              margin={{
+                left: 12,
+                right: 12,
+              }}
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => value.slice(0, 3)}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" />}
+              />
+              <Line
+                dataKey="weight"
+                type="natural"
+                stroke="var(--color-weight)"
+                strokeWidth={2}
+                dot={{
+                  fill: "var(--color-weight)",
+                }}
+                activeDot={{
+                  r: 6,
+                }}
+              />
+            </LineChart>
+          </ChartContainer>
         </CardContent>
       </Card>
     </div>
