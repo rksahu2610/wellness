@@ -13,6 +13,7 @@ import { Label } from "~/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select"
 import { Progress } from "~/components/ui/progress"
+import { toast } from "sonner"
 
 type Meal = {
   id: string
@@ -108,6 +109,7 @@ export function MealLog() {
     setCarbs("")
     setFat("")
     setNotes("")
+    toast.success('Successful Created.')
   }
 
   const removeMeal = (mealId: string) => {
@@ -129,6 +131,7 @@ export function MealLog() {
 
       return updated
     })
+    toast.success('Successful Remove.')
   }
 
   const getMealsForDate = (date: Date) => {
