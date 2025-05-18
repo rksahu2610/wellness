@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { CalendarIcon, Clock, Moon } from "lucide-react"
-import { format, subDays } from "date-fns"
+import { useEffect, useState } from "react"
+import { CalendarIcon, Moon } from "lucide-react"
+import { format } from "date-fns"
 
 import { cn } from "~/lib/utils"
 import { Button } from "~/components/ui/button"
@@ -10,12 +10,15 @@ import { Calendar } from "~/components/ui/calendar"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select"
+import { toast } from "sonner"
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart"
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis } from "recharts"
 
 type SleepEntry = {
   date: Date
   bedTime: string
   wakeTime: string
-  duration: number // in minutes
+  duration: number
   quality: 1 | 2 | 3 | 4 | 5
   notes?: string
 }
@@ -24,66 +27,17 @@ export function SleepTracker() {
   const today = new Date()
 
   const [date, setDate] = useState<Date>(today)
-  const [bedTime, setBedTime] = useState("22:30")
-  const [wakeTime, setWakeTime] = useState("06:30")
+  const [bedTime, setBedTime] = useState("00:00")
+  const [wakeTime, setWakeTime] = useState("00:00")
   const [quality, setQuality] = useState<1 | 2 | 3 | 4 | 5>(4)
   const [notes, setNotes] = useState("")
 
-  const [sleepEntries, setSleepEntries] = useState<SleepEntry[]>([
-    {
-      date: subDays(today, 1),
-      bedTime: "23:00",
-      wakeTime: "07:00",
-      duration: 480,
-      quality: 4,
-    },
-    {
-      date: subDays(today, 2),
-      bedTime: "23:30",
-      wakeTime: "06:45",
-      duration: 435,
-      quality: 3,
-      notes: "Woke up once during the night",
-    },
-    {
-      date: subDays(today, 3),
-      bedTime: "22:15",
-      wakeTime: "06:30",
-      duration: 495,
-      quality: 5,
-      notes: "Great sleep!",
-    },
-    {
-      date: subDays(today, 4),
-      bedTime: "00:30",
-      wakeTime: "07:15",
-      duration: 405,
-      quality: 2,
-      notes: "Went to bed too late",
-    },
-    {
-      date: subDays(today, 5),
-      bedTime: "22:45",
-      wakeTime: "06:45",
-      duration: 480,
-      quality: 4,
-    },
-    {
-      date: subDays(today, 6),
-      bedTime: "23:15",
-      wakeTime: "07:00",
-      duration: 465,
-      quality: 4,
-    },
-    {
-      date: subDays(today, 7),
-      bedTime: "22:30",
-      wakeTime: "06:15",
-      duration: 465,
-      quality: 3,
-      notes: "Woke up too early",
-    },
-  ])
+  const [sleepEntries, setSleepEntries] = useState<SleepEntry[]>([])
+
+  useEffect(() => {
+    const sleep_data = JSON.parse(localStorage.getItem('sleep') || '[]');
+    setSleepEntries(sleep_data)
+  }, [])
 
   const calculateDuration = (bedTime: string, wakeTime: string) => {
     const [bedHours, bedMinutes] = bedTime.split(":").map(Number)
@@ -91,7 +45,6 @@ export function SleepTracker() {
 
     let durationMinutes = wakeHours * 60 + wakeMinutes - (bedHours * 60 + bedMinutes)
 
-    // If negative, it means sleep went past midnight
     if (durationMinutes < 0) {
       durationMinutes += 24 * 60
     }
@@ -118,33 +71,54 @@ export function SleepTracker() {
     }
 
     setSleepEntries((prev) => {
-      // Replace if entry for this date already exists
-      const exists = prev.findIndex((entry) => entry.date.toDateString() === date.toDateString())
+      const exists = prev.findIndex((entry) => new Date(entry.date).toDateString() === new Date(date).toDateString())
 
       if (exists >= 0) {
         const updated = [...prev]
         updated[exists] = newEntry
+        localStorage.setItem('sleep', JSON.stringify(updated))
         return updated
       }
 
-      return [...prev, newEntry].sort((a, b) => b.date.getTime() - a.date.getTime())
+      const data = [...prev, newEntry].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      localStorage.setItem('sleep', JSON.stringify(data))
+      return data
     })
 
     setNotes("")
+    toast.success('Sleep Entry Created.')
   }
 
   const getSleepEntryForDate = (date: Date) => {
-    return sleepEntries.find((entry) => entry.date.toDateString() === date.toDateString())
+    return sleepEntries.find((entry) => new Date(entry.date).toDateString() === new Date(date).toDateString())
   }
 
   const currentEntry = getSleepEntryForDate(date)
 
-  const averageSleepDuration = Math.round(
+  const averageSleepDuration = sleepEntries?.length > 0 ? Math.round(
     sleepEntries.reduce((sum, entry) => sum + entry.duration, 0) / sleepEntries.length,
-  )
+  ) : 0
 
-  const averageSleepQuality =
-    Math.round((sleepEntries.reduce((sum, entry) => sum + entry.quality, 0) / sleepEntries.length) * 10) / 10
+  const averageSleepQuality = sleepEntries?.length > 0 ?
+    Math.round((sleepEntries.reduce((sum, entry) => sum + entry.quality, 0) / sleepEntries.length) * 10) / 10 : 0
+
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const chartData = weekDays.map(day => {
+    const entry = sleepEntries.find(({ date }) => format(new Date(date), 'EEE') === day);
+    return {
+      day,
+      hrs: entry ? +(entry.duration / 60).toFixed(1) : 0
+    };
+  });
+
+
+  const chartConfig = {
+    hrs: {
+      label: "Hours",
+      color: "var(--color-indigo-500)",
+    },
+  } satisfies ChartConfig
 
   return (
     <div className="space-y-4">
@@ -155,7 +129,7 @@ export function SleepTracker() {
             <CardDescription>Record your sleep for a specific date</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            <div className="flex flex-col space-y-2">
               <label className="text-sm font-medium">Date</label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -180,12 +154,11 @@ export function SleepTracker() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="flex flex-col space-y-2">
                 <label className="text-sm font-medium">Bed Time</label>
                 <div className="flex items-center">
-                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
                   <Select value={bedTime} onValueChange={(value) => setBedTime(value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -207,12 +180,11 @@ export function SleepTracker() {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="flex flex-col space-y-2">
                 <label className="text-sm font-medium">Wake Time</label>
                 <div className="flex items-center">
-                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
                   <Select value={wakeTime} onValueChange={(value) => setWakeTime(value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -235,7 +207,7 @@ export function SleepTracker() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="flex flex-col space-y-2">
               <label className="text-sm font-medium">Sleep Quality</label>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((value) => (
@@ -255,7 +227,7 @@ export function SleepTracker() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="flex flex-col space-y-2">
               <label className="text-sm font-medium">Notes (Optional)</label>
               <textarea
                 className="w-full rounded-md border p-2"
@@ -318,7 +290,7 @@ export function SleepTracker() {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="flex flex-col space-y-2">
               <h4 className="font-medium">Weekly Averages</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-lg border p-3 text-center">
@@ -359,11 +331,6 @@ export function SleepTracker() {
               ))}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button variant="outline" className="w-full">
-              View Full History
-            </Button>
-          </CardFooter>
         </Card>
       </div>
 
@@ -373,34 +340,36 @@ export function SleepTracker() {
           <CardDescription>Visualize your sleep duration over time</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[200px] w-full">
-            <div className="flex h-full items-end gap-2 pb-4">
-              {sleepEntries
-                .slice(0, 7)
-                .reverse()
-                .map((entry, i) => {
-                  const heightPercentage = (entry.duration / (10 * 60)) * 100
-
-                  return (
-                    <div key={i} className="relative flex h-full w-full flex-col justify-end">
-                      <div
-                        className={cn(
-                          "w-full rounded-md",
-                          entry.quality >= 4 ? "bg-indigo-500" : entry.quality >= 3 ? "bg-indigo-400" : "bg-indigo-300",
-                        )}
-                        style={{ height: `${heightPercentage}%` }}
-                      />
-                      <div className="absolute bottom-0 w-full">
-                        <div className="mt-2 text-center">
-                          <div className="text-xs font-medium">{formatDuration(entry.duration)}</div>
-                          <div className="text-xs text-muted-foreground">{format(entry.date, "E")}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
+          <ChartContainer config={chartConfig}>
+            <BarChart
+              accessibilityLayer
+              data={chartData}
+              margin={{
+                top: 20,
+              }}
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="day"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                tickFormatter={(value) => value.slice(0, 3)}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" label={'hello'} />}
+              />
+              <Bar dataKey="hrs" fill="var(--color-hrs)" radius={8}>
+                <LabelList
+                  position="insideBottom"
+                  offset={12}
+                  className="fill-foreground"
+                  fontSize={12}
+                />
+              </Bar>
+            </BarChart>
+          </ChartContainer>
           <div className="mt-8 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">Average: {formatDuration(averageSleepDuration)}</div>
             <div className="text-sm text-muted-foreground">Recommended: 7-9 hours</div>
