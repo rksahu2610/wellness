@@ -1,19 +1,43 @@
 "use client"
 
-import { useState } from "react"
-import { Droplets, Plus, Minus } from "lucide-react"
+import { format } from "date-fns"
+import { Droplets, Minus, Plus } from "lucide-react"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
 import { Button } from "~/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card"
 import { Progress } from "~/components/ui/progress"
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart"
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis } from "recharts"
+
+type WaterEntry = {
+  time: Date
+  amount: string | number
+}
 
 export function WaterIntake() {
-  const [waterGoal] = useState(2500) // in ml
-  const [waterIntake, setWaterIntake] = useState(1200) // in ml
-  const [cupSize, setCupSize] = useState(250) // in ml
+  const [waterGoal] = useState(2500)
+  const [waterIntake, setWaterIntake] = useState(0)
+  const [cupSize, setCupSize] = useState(250)
+  const [waterEntries, setWaterEntries] = useState<WaterEntry[]>([])
+
+  useEffect(() => {
+    const water_data = JSON.parse(localStorage.getItem('water') || '[]');
+    const water_take = water_data.reduce((sum: number, { amount }: { amount: number }) => sum + amount, 0)
+    setWaterEntries(water_data)
+    setWaterIntake(water_take)
+  }, [])
 
   const addWater = (amount: number) => {
+    const time = new Date()
     setWaterIntake((prev) => Math.min(prev + amount, waterGoal * 1.5))
+    setWaterEntries(prev => {
+      const data = [...prev, { time, amount }]
+      localStorage.setItem('water', JSON.stringify(data));
+      return data;
+    })
+    toast.success('Successfully Added Water.')
   }
 
   const removeWater = (amount: number) => {
@@ -22,12 +46,22 @@ export function WaterIntake() {
 
   const percentComplete = Math.round((waterIntake / waterGoal) * 100)
 
-  const waterHistory = [
-    { time: "8:00 AM", amount: 250 },
-    { time: "10:30 AM", amount: 250 },
-    { time: "12:15 PM", amount: 500 },
-    { time: "2:45 PM", amount: 200 },
-  ]
+  const chartConfig = {
+    amount: {
+      label: "Litre",
+      color: "var(--color-sky-500)",
+    },
+  } satisfies ChartConfig
+
+
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const chart_data = weekDays.map(day => {
+    const total = waterEntries.reduce((sum, { time, amount }) => {
+      return format(new Date(time), 'EEE') === day ? sum + +amount : sum;
+    }, 0);
+    return { day, amount: (total / 1000).toFixed(1) };
+  });
 
   return (
     <div className="space-y-4">
@@ -39,13 +73,13 @@ export function WaterIntake() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center justify-center space-y-2">
-              <div className="relative flex h-48 w-48 items-center justify-center rounded-full border-8 border-primary/20 overflow-hidden">
+              <div className="relative flex size-48 items-center justify-center rounded-full border-8 border-primary/20 overflow-hidden">
                 <div
-                  className="absolute bottom-0 left-0 right-0 bg-sky-500/80 transition-all duration-500"
+                  className="absolute inset-x-0 bottom-0 bg-sky-500/80 transition-all duration-500"
                   style={{ height: `${Math.min(percentComplete, 100)}%`, borderRadius: "50%" }}
                 />
                 <div className="relative z-10 text-center">
-                  <Droplets className="mx-auto h-12 w-12 text-sky-500" />
+                  <Droplets className="mx-auto size-12 text-sky-500" />
                   <div className="mt-2 text-3xl font-bold">{(waterIntake / 1000).toFixed(1)}L</div>
                   <div className="text-sm text-muted-foreground">of {(waterGoal / 1000).toFixed(1)}L goal</div>
                 </div>
@@ -81,9 +115,9 @@ export function WaterIntake() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 <Button onClick={() => addWater(cupSize)}>Add Water</Button>
-                <Button variant="outline" onClick={() => removeWater(cupSize)} disabled={waterIntake === 0}>
+                <Button className="hidden" variant="outline" onClick={() => removeWater(cupSize)} disabled={waterIntake === 0}>
                   Remove
                 </Button>
               </div>
@@ -116,24 +150,19 @@ export function WaterIntake() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {waterHistory.map((entry, i) => (
+              {waterEntries.map((entry, i) => (
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sky-500 dark:bg-sky-900">
                       <Droplets className="h-4 w-4" />
                     </div>
-                    <span>{entry.time}</span>
+                    <span>{format(new Date(entry.time), 'h:mm a')}</span>
                   </div>
                   <div className="font-medium">{entry.amount}ml</div>
                 </div>
               ))}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button variant="outline" className="w-full">
-              View Full History
-            </Button>
-          </CardFooter>
         </Card>
       </div>
 
@@ -143,18 +172,37 @@ export function WaterIntake() {
           <CardDescription>Your hydration patterns over the past week</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[200px] w-full">
-            <div className="flex h-full items-end gap-2 pb-4">
-              {[65, 80, 95, 70, 85, 60, 75].map((value, i) => (
-                <div key={i} className="relative flex h-full w-full flex-col justify-end">
-                  <div className="w-full rounded-md bg-sky-500" style={{ height: `${value}%` }} />
-                  <span className="mt-1 text-center text-xs text-muted-foreground">
-                    {["M", "T", "W", "T", "F", "S", "S"][i]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ChartContainer config={chartConfig}>
+            <BarChart
+              accessibilityLayer
+              data={chart_data}
+              margin={{
+                top: 20,
+              }}
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="day"
+                tickLine={false}
+                type="category"
+                tickMargin={10}
+                axisLine={false}
+                tickFormatter={(value) => value.slice(0, 3)}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" />}
+              />
+              <Bar dataKey="amount" fill="var(--color-amount)" radius={8}>
+                <LabelList
+                  position="insideBottom"
+                  offset={12}
+                  className="fill-foreground"
+                  fontSize={12}
+                />
+              </Bar>
+            </BarChart>
+          </ChartContainer>
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">Average: 2.1L per day</div>
             <div className="text-sm text-muted-foreground">Goal: 2.5L per day</div>
