@@ -22,7 +22,7 @@ import { UserNav } from "~/components/user-nav"
 import { usePathname } from "next/navigation"
 
 const sideMenu = [
-  { id: 1, icon: Home, name: 'Dashbaord', link: '/' },
+  { id: 1, icon: Home, name: 'Dashboard', link: '/' },
   { id: 2, icon: Heart, name: 'Mood Tracker', link: '/mood' },
   { id: 3, icon: Droplets, name: 'Water Intake', link: '/water' },
   { id: 4, icon: Timer, name: 'Breathing Exercise', link: '/breathing' },
