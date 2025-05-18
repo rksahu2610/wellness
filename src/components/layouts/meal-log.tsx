@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { CalendarIcon, Clock, Plus, Trash2, Utensils } from "lucide-react"
+import { useEffect, useState } from "react"
+import { CalendarIcon, Plus, Trash2, Utensils } from "lucide-react"
 import { format } from "date-fns"
 
 import { cn } from "~/lib/utils"
@@ -34,7 +34,7 @@ type DailyMeals = {
 export function MealLog() {
   const [date, setDate] = useState<Date>(new Date())
   const [mealName, setMealName] = useState("")
-  const [mealTime, setMealTime] = useState("12:00")
+  const [mealTime, setMealTime] = useState(format(new Date(), 'HH:00'))
   const [calories, setCalories] = useState("")
   const [protein, setProtein] = useState("")
   const [carbs, setCarbs] = useState("")
@@ -42,42 +42,24 @@ export function MealLog() {
   const [notes, setNotes] = useState("")
   const [dailyNotes, setDailyNotes] = useState("")
 
-  const [dailyMeals, setDailyMeals] = useState<DailyMeals[]>([
-    {
-      date: new Date(),
-      meals: [
-        {
-          id: "1",
-          name: "Breakfast - Oatmeal with Berries",
-          time: "08:00",
-          calories: 320,
-          protein: 12,
-          carbs: 45,
-          fat: 8,
-        },
-        {
-          id: "2",
-          name: "Lunch - Chicken Salad",
-          time: "12:30",
-          calories: 450,
-          protein: 35,
-          carbs: 25,
-          fat: 15,
-        },
-        {
-          id: "3",
-          name: "Snack - Greek Yogurt",
-          time: "15:00",
-          calories: 150,
-          protein: 15,
-          carbs: 10,
-          fat: 5,
-        },
-      ],
-    },
-  ])
+  const [dailyMeals, setDailyMeals] = useState<DailyMeals[]>([])
 
   const calorieGoal = 2200
+
+  useEffect(() => {
+    const meal_data = JSON.parse(localStorage.getItem('meal') || '[]')
+    const notes = meal_data.find(({ date }: { date: Date }) => new Date(date).toDateString() === new Date(date).toDateString())?.notes || ''
+    setDailyMeals(meal_data)
+    setDailyNotes(notes)
+  }, [date])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMealTime(format(new Date(), 'HH:00'));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const addMeal = () => {
     if (!mealName.trim() || !calories.trim()) return
@@ -94,22 +76,20 @@ export function MealLog() {
     }
 
     setDailyMeals((prev) => {
-      // Find if we already have meals for this date
-      const dateIndex = prev.findIndex((dm) => dm.date.toDateString() === date.toDateString())
+      const dateIndex = prev.findIndex((dm) => new Date(dm.date).toDateString() === new Date(date).toDateString())
 
       if (dateIndex >= 0) {
-        // Update existing date entry
         const updated = [...prev]
         updated[dateIndex] = {
           ...updated[dateIndex],
           meals: [...updated[dateIndex].meals, newMeal],
           notes: dailyNotes.trim() || updated[dateIndex].notes,
         }
+        localStorage.setItem('meal', JSON.stringify(updated))
         return updated
       }
 
-      // Create new date entry
-      return [
+      const data = [
         ...prev,
         {
           date: new Date(date),
@@ -117,9 +97,11 @@ export function MealLog() {
           notes: dailyNotes.trim() || undefined,
         },
       ]
+
+      localStorage.setItem('meal', JSON.stringify(data))
+      return data
     })
 
-    // Reset form
     setMealName("")
     setCalories("")
     setProtein("")
@@ -130,7 +112,7 @@ export function MealLog() {
 
   const removeMeal = (mealId: string) => {
     setDailyMeals((prev) => {
-      const dateIndex = prev.findIndex((dm) => dm.date.toDateString() === date.toDateString())
+      const dateIndex = prev.findIndex((dm) => new Date(dm.date).toDateString() === new Date(date).toDateString())
       if (dateIndex < 0) return prev
 
       const updated = [...prev]
@@ -139,17 +121,25 @@ export function MealLog() {
         meals: updated[dateIndex].meals.filter((meal) => meal.id !== mealId),
       }
 
-      // If no meals left for this date, remove the date entry
       if (updated[dateIndex].meals.length === 0) {
         return prev.filter((_, i) => i !== dateIndex)
       }
+
+      localStorage.setItem('meal', JSON.stringify(updated))
 
       return updated
     })
   }
 
   const getMealsForDate = (date: Date) => {
-    return dailyMeals.find((dm) => dm.date.toDateString() === date.toDateString())
+    return dailyMeals.find((dm) => new Date(dm.date).toDateString() === new Date(date).toDateString())
+  }
+
+  const addMealScrollTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
   }
 
   const currentDayMeals = getMealsForDate(date)
@@ -203,9 +193,8 @@ export function MealLog() {
               <div className="space-y-2">
                 <Label htmlFor="meal-time">Time</Label>
                 <div className="flex items-center">
-                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
                   <Select value={mealTime} onValueChange={setMealTime}>
-                    <SelectTrigger id="meal-time">
+                    <SelectTrigger id="meal-time" className="w-full">
                       <SelectValue placeholder="Select time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -382,7 +371,7 @@ export function MealLog() {
           <CardContent>
             <div className="space-y-4">
               {dailyMeals.slice(0, 3).map((dayMeal) => (
-                <div key={dayMeal.date.toISOString()} className="space-y-2">
+                <div key={new Date(dayMeal.date).toISOString()} className="space-y-2">
                   <div className="font-medium">{format(dayMeal.date, "MMMM d, yyyy")}</div>
                   <div className="space-y-2">
                     {dayMeal.meals.slice(0, 3).map((meal) => (
@@ -409,11 +398,6 @@ export function MealLog() {
               ))}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button variant="outline" className="w-full">
-              View Full History
-            </Button>
-          </CardFooter>
         </Card>
       </div>
 
@@ -458,7 +442,7 @@ export function MealLog() {
               <div className="text-center text-muted-foreground">
                 <Utensils className="mx-auto h-10 w-10 opacity-50" />
                 <p className="mt-2">No meals logged for this date</p>
-                <Button variant="outline" className="mt-4" onClick={() => setMealName("Meal")}>
+                <Button variant="outline" className="mt-4" onClick={addMealScrollTop}>
                   Add Your First Meal
                 </Button>
               </div>
