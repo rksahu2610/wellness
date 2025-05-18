@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { Badge } from "~/components/ui/badge"
 import { moodEmojis, moodText } from "~/constants/data"
+import { toast } from "sonner"
 
 type JournalEntry = {
   id: string
@@ -78,6 +79,7 @@ export function MentalHealthJournal() {
     setContent("")
     setMood(-1)
     setTags([])
+    toast.success('Successfully Created Entry.')
   }
 
   const deleteJournalEntry = (id: string) => {
@@ -86,6 +88,7 @@ export function MentalHealthJournal() {
       localStorage.setItem('mental', JSON.stringify(remove))
       return remove;
     })
+    toast.success('Successfully Deleted Entry.')
   }
 
   const getEntryForDate = (date: Date) => {
