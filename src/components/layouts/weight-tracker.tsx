@@ -14,12 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart"
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 import { toast } from "sonner"
-
-type WeightEntry = {
-  date: Date
-  weight: number
-  notes?: string
-}
+import type { WeightEntry } from "~/types/types"
 
 export function WeightTracker() {
   const today = new Date()

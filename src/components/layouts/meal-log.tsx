@@ -14,23 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select"
 import { Progress } from "~/components/ui/progress"
 import { toast } from "sonner"
-
-type Meal = {
-  id: string
-  name: string
-  time: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
-  notes?: string
-}
-
-type DailyMeals = {
-  date: Date
-  meals: Meal[]
-  notes?: string
-}
+import type { DailyMeals, Meal } from "~/types/types"
 
 export function MealLog() {
   const [date, setDate] = useState<Date>(new Date())

@@ -10,11 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Progress } from "~/components/ui/progress"
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart"
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis } from "recharts"
-
-type WaterEntry = {
-  time: Date
-  amount: string | number
-}
+import type { WaterEntry } from "~/types/types"
 
 export function WaterIntake() {
   const [waterGoal] = useState(2500)

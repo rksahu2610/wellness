@@ -13,15 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { toast } from "sonner"
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart"
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis } from "recharts"
-
-type SleepEntry = {
-  date: Date
-  bedTime: string
-  wakeTime: string
-  duration: number
-  quality: 1 | 2 | 3 | 4 | 5
-  notes?: string
-}
+import type { SleepEntry } from "~/types/types"
 
 export function SleepTracker() {
   const today = new Date()

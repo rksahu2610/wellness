@@ -11,11 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover"
 import { moods } from "~/constants/data"
 import { toast } from "sonner"
-type MoodEntry = {
-  date: Date
-  mood: (typeof moods)[number]
-  note?: string
-}
+import type { MoodEntry } from "~/types/types"
 
 export function MoodTracker() {
   const [date, setDate] = useState<Date>(new Date())

@@ -15,14 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { Badge } from "~/components/ui/badge"
 import { moodEmojis, moodText } from "~/constants/data"
 import { toast } from "sonner"
-
-type JournalEntry = {
-  id: string
-  date: Date
-  content: string
-  mood: number
-  tags: string[]
-}
+import type { JournalEntry } from "~/types/types"
 
 export function MentalHealthJournal() {
   const [date, setDate] = useState<Date>(new Date())
