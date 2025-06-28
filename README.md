@@ -1,4 +1,4 @@
-### Health
+### Wellness
 # Mood tracker with emoji buttons and a color-coded calendar.
 # Water intake tracker with cup buttons and daily goal.
 # Breathing animation with inhale/exhale loop.
