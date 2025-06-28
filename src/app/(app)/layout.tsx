@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Droplets, Heart, Home, Moon, Scale, Timer, Utensils } from "lucide-react"
+import { Activity, Calendar, Droplets, Heart, Home, Moon, Scale, Timer, Utensils } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ModeToggle } from "~/components/mode-toggle"
@@ -28,8 +28,10 @@ const sideMenu = [
   { id: 4, icon: Timer, name: 'Breathing Exercise', link: '/breathing' },
   { id: 5, icon: Utensils, name: 'Meal Log', link: '/meal' },
   { id: 6, icon: Moon, name: 'Sleep Tracker', link: '/sleep' },
-  { id: 7, icon: Calendar, name: 'Mental Health Journal', link: '/mental' },
-  { id: 8, icon: Scale, name: 'Weight Tracker', link: '/weight' },
+  { id: 7, icon: Activity, name: 'Fitness Routine', link: '/fitness' },
+  { id: 8, icon: Timer, name: 'Stretch Sequence', link: '/stretch' },
+  { id: 9, icon: Calendar, name: 'Mental Health Journal', link: '/mental' },
+  { id: 10, icon: Scale, name: 'Weight Tracker', link: '/weight' },
 ];
 
 export default function Page({ children }: { children: React.ReactNode }) {
